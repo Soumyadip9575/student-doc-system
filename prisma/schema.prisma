@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model StudentRecord {
+  id          String     @id @default(cuid())
+  fingerprint String     @unique
+  studentId   String?
+  name        String?
+  email       String?
+  rawData     Json
+  sheetId     String
+  createdAt   DateTime   @default(now())
+  deliveries  Delivery[]
+  @@index([sheetId])
+}
+
+model ProcessingBatch {
+  id          String     @id @default(cuid())
+  sheetId     String
+  recipient   String
+  total       Int        @default(0)
+  skipped     Int        @default(0)
+  sent        Int        @default(0)
+  failed      Int        @default(0)
+  status      String     @default("RUNNING")
+  startedAt   DateTime   @default(now())
+  completedAt DateTime?
+  deliveries  Delivery[]
+}
+
+// UNIQUE(recordId, purpose) is the database-level duplicate guard.
+model Delivery {
+  id        String          @id @default(cuid())
+  recordId  String
+  record    StudentRecord   @relation(fields: [recordId], references: [id])
+  purpose   String          @default("STUDENT_DOC")
+  status    String          // PROCESSING | SENT | FAILED
+  docRef    String?
+  docHash   String?
+  recipient String
+  error     String?
+  batchId   String
+  batch     ProcessingBatch @relation(fields: [batchId], references: [id])
+  sentAt    DateTime?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  @@unique([recordId, purpose])
+  @@index([status])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userEmail String?
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([email])
+}
+
+model AppForm {
+  id          String           @id @default(cuid())
+  title       String
+  description String           @default("")
+  fields      Json
+  isActive    Boolean          @default(true)
+  createdBy   String
+  createdAt   DateTime         @default(now())
+  access      FormAccess[]
+  submissions FormSubmission[]
+  @@index([isActive])
+}
+
+model FormAccess {
+  id        String   @id @default(cuid())
+  formId    String
+  email     String
+  form      AppForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([formId, email])
+  @@index([email])
+}
+
+model FormSubmission {
+  id          String   @id @default(cuid())
+  formId      String
+  userEmail   String
+  data        Json
+  submittedAt DateTime @default(now())
+  processedAt DateTime?
+  form        AppForm  @relation(fields: [formId], references: [id], onDelete: Cascade)
+  @@index([formId, submittedAt])
+  @@index([userEmail])
+}
+
+model PortalUser {
+  email        String   @id
+  registeredAt DateTime @default(now())
+}
+
+model AdminAccount {
+  email      String   @id
+  adminId    String   @unique
+  isActive   Boolean  @default(true)
+  assignedBy String
+  createdAt  DateTime @default(now())
+  @@index([isActive])
+}
