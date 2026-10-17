@@ -1,42 +1,95 @@
 # Student Document Distribution System
 
-Next.js 14 + Prisma/PostgreSQL + Auth.js + pdf-lib + Brevo transactional email API.
+A web application for **Brainware University (CSE-AIML)** that lets administrators create forms, collect student responses, and generate and email personalised PDF documents.
 
-## Run locally
-1. `npm install`
-2. Open `.env`: set `DATABASE_URL`, `DIRECT_URL`, `ADMIN_EMAILS`, `BREVO_API_KEY`, `EMAIL_FROM` to a verified Brevo sender, and `AUTH_SECRET`. Google OAuth values are optional; email OTP is also supported.
-3. Run `npx prisma db push` to create or update the database tables.
-4. Run `npm run dev` and open http://localhost:3000.
+**Live demo:** https://student-doc-system.vercel.app
 
-With `DEMO_MODE=true`, no real email is sent and the OTP prints in the terminal. To send registration and login codes to users, set `DEMO_MODE=false` and configure a Brevo API key plus a verified sender address. Registration requires an active form invitation for the email address; the registration page will report if one is missing.
+## Features
 
-## Free-tier deployment (Vercel + Neon + Brevo)
-This avoids Railway's paid-plan requirement. Free tiers have quotas, can sleep or scale to zero, and are not an uptime guarantee. Check provider terms before using this for university production data. Vercel Hobby is intended for personal, non-commercial use.
+- Email OTP authentication (Google sign-in optional)
+- Admin Form Builder with per-user access control
+- Invitation-based student registration
+- Student panel for submitting assigned forms
+- PDF generation and email delivery to students
+- Duplicate-send prevention (one delivery per record and purpose)
 
-1. Create free accounts at [Vercel](https://vercel.com), [Neon](https://neon.com), and [Brevo](https://www.brevo.com). In Brevo, register and verify the sender email address you will use.
-2. In Neon, create a PostgreSQL project and copy both connection strings: use the **pooled** URL (hostname contains `-pooler`) as `DATABASE_URL`; use the **direct** URL as `DIRECT_URL`.
-3. In Brevo, create a transactional email API key. Keep it private; do not paste it into source code or commit it.
-4. In PowerShell, open this project directory and link it to a new Vercel project:
-   ```powershell
-   npm install --global vercel
-   vercel login
-   vercel link
-   ```
-5. In Vercel project **Settings → Environment Variables**, add `DATABASE_URL`, `DIRECT_URL`, `BREVO_API_KEY`, `EMAIL_FROM` (the verified sender, e.g. `University Administration <your-verified-address@example.com>`), `AUTH_SECRET` (a newly generated random value), `AUTH_URL` (the HTTPS deployment URL), `ADMIN_EMAILS`, `UNIVERSITY_NAME`, `DEPARTMENT_NAME`, and `DEMO_MODE=false`. Add `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` only if Google sign-in is configured. Never deploy `.env`; it is excluded from Git.
-6. After saving the production variables, create the production database tables with `vercel env run --environment production -- npx prisma db push`. Confirm that the linked Vercel project/environment and `DIRECT_URL` point to the new production database; this command changes its schema.
-7. Run `vercel --prod`. Open the production URL, update `AUTH_URL` to that URL in Vercel, then redeploy. Test OTP delivery, admin login, registration, invitations, and document email delivery. If Google sign-in is enabled, add `https://<your-production-domain>/api/auth/callback/google` to the authorized redirect URIs in Google Cloud and redeploy.
+## Tech Stack
 
-The Neon database starts empty; local records are not copied. Back up and import any data needed before switching users. Don't put sensitive university records on third-party free tiers unless the university approves their data-protection terms. Vercel Hobby functions have a 300-second maximum duration, so large document-processing batches may time out. Configure usage alerts/limits where available; free plans can change or suspend service when quotas are reached.
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14, TypeScript |
+| Database | PostgreSQL (Neon) with Prisma ORM |
+| Authentication | Auth.js |
+| PDF | pdf-lib |
+| Email | Brevo transactional email API |
+| Hosting | Vercel |
 
-## Admin and user workflow
-- Add administrator emails to `ADMIN_EMAILS`.
-- Admins create forms in **Form Builder**, then grant access by entering user email addresses.
-- Invited users sign in with an authorized email and OTP, then submit assigned forms in **User Panel**.
-- Admins review responses and generate/send PDFs from **Generate Documents**.
-- Form definitions, access grants, and responses are stored in the application database; Google Sheets is not used.
+## Getting Started (Local Development)
 
-## Duplicate prevention
-`Delivery` has `UNIQUE(recordId, purpose)`; records are claimed atomically, so repeat or concurrent sends skip already-claimed records. Only FAILED deliveries are re-claimed on retry.
+1. Clone the repository and install dependencies:
+```bash
+   git clone https://github.com/Soumyadip9575/student-doc-system.git
+   cd student-doc-system
+   npm install
+```
+2. Copy `.env.example` to `.env` and fill in the values (see the table below).
+3. Create the database tables:
+```bash
+   npx prisma db push
+```
+4. Start the development server:
+```bash
+   npm run dev
+```
+5. Open http://localhost:3000.
 
-## Notes
-Email delivery requires a valid Brevo API key and verified sender. User access is granted per active form and revoked when that form is paused.
+With `DEMO_MODE=true`, no real email is sent and the OTP is printed in the terminal.
+
+## Environment Variables
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | Neon pooled connection string (host contains `-pooler`) |
+| `DIRECT_URL` | Neon direct connection string |
+| `AUTH_SECRET` | Random secret, generate with `openssl rand -hex 32` |
+| `AUTH_URL` | Public HTTPS URL of the deployment |
+| `ADMIN_EMAILS` | Comma-separated administrator emails |
+| `BREVO_API_KEY` | Brevo transactional email API key |
+| `EMAIL_FROM` | Verified Brevo sender, e.g. `University Administration <name@example.com>` |
+| `UNIVERSITY_NAME` | Name shown in the interface and documents |
+| `DEPARTMENT_NAME` | Department name |
+| `DEMO_MODE` | `true` for local testing, `false` in production |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Optional, only for Google sign-in |
+
+Never commit `.env`. It is excluded through `.gitignore`.
+
+## Deployment (Free Tier: Vercel + Neon + Brevo)
+
+1. Create free accounts on Vercel, Neon and Brevo, and verify a sender email in Brevo.
+2. In Neon, create a project. Use the pooled URL as `DATABASE_URL` and the direct URL as `DIRECT_URL`.
+3. Run `npx prisma db push` once with these values to create the tables.
+4. In Brevo, create an API key with the Transactional email permission.
+5. Push the code to GitHub and import the repository in Vercel.
+6. Add all environment variables in Vercel under Settings, then Environment Variables.
+7. Deploy, then set `AUTH_URL` to the production URL and redeploy.
+8. If Google sign-in is enabled, add `https://<your-domain>/api/auth/callback/google` to the authorised redirect URIs in Google Cloud.
+
+## Usage
+
+1. An administrator signs in with an email listed in `ADMIN_EMAILS`.
+2. The administrator creates a form in **Form Builder** and grants access to user emails.
+3. Invited users register, sign in with OTP and submit the form in **User Panel**.
+4. The administrator reviews responses and sends PDFs from **Generate Documents**.
+
+## Limitations
+
+- Free tiers have quotas and may sleep, scale to zero or change terms.
+- Vercel Hobby is for personal, non-commercial use, and functions time out after 300 seconds.
+- Brevo free plan allows about 300 emails per day.
+- Emails from a free Gmail sender may land in spam, so ask recipients to check their Spam folder.
+- Do not store sensitive university records on third-party free tiers without institutional approval.
+
+## Author
+
+**Soumyadip Karak** — Brainware University, CSE-AIML
+GitHub: [@Soumyadip9575](https://github.com/Soumyadip9575)
