@@ -67,6 +67,17 @@ export default function FormsManager({ forms: initialForms }: { forms: FormSumma
     setBusy("");
   }
 
+  async function deleteForm(form: FormSummary) {
+    if (!window.confirm(`Delete "${form.title}"? Its responses and authorized email addresses will also be deleted.`)) return;
+    setBusy(form.id); setMessage("");
+    try {
+      await request(`/api/admin/forms/${form.id}`, "DELETE", {});
+      setForms((current) => current.filter((item) => item.id !== form.id));
+      setMessage(`Deleted "${form.title}".`);
+    } catch (error) { setMessage((error as Error).message); }
+    setBusy("");
+  }
+
   async function removeAccess(form: FormSummary, email: string) {
     setBusy(`${form.id}:${email}`); setMessage("");
     try {
@@ -105,7 +116,7 @@ export default function FormsManager({ forms: initialForms }: { forms: FormSumma
       {!forms.length && <p>No forms created yet.</p>}
       {forms.map((form) => <article className="form-admin-item" key={form.id}>
         <div className="form-admin-heading"><div><h3>{form.title}</h3><p>{form.description || "No description"}</p></div>
-          <div><Link href={`/admin/forms/${form.id}`}>View responses</Link><button type="button" className="secondary-button" disabled={!!busy} onClick={() => toggleForm(form)}>{form.isActive ? "Pause form" : "Activate form"}</button></div></div>
+          <div><Link href={`/admin/forms/${form.id}`}>View responses</Link><button type="button" className="secondary-button" disabled={!!busy} onClick={() => toggleForm(form)}>{form.isActive ? "Pause form" : "Activate form"}</button><button type="button" className="secondary-button" disabled={!!busy} onClick={() => deleteForm(form)}>{busy === form.id ? "Deleting..." : "Delete form"}</button></div></div>
         <p>{form._count.submissions} submissions · {form.access.length} authorized emails · {form.isActive ? "Active" : "Paused"}</p>
         {form.access.length > 0 && <div className="access-list">{form.access.map((entry) => <span className="access-entry" key={entry.email}>{entry.email}<button type="button" className="remove-access" title={`Remove ${entry.email}`} aria-label={`Remove ${entry.email}`} disabled={!!busy} onClick={() => removeAccess(form, entry.email)}>×</button></span>)}</div>}
         <label htmlFor={`access-${form.id}`}>Grant access by email</label>
