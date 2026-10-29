@@ -7,7 +7,7 @@ A web application for **Brainware University (CSE-AIML)** that lets administrato
 ## Features
 
 - Email OTP authentication (Google sign-in optional)
-- Admin Form Builder with per-user access control
+- Admin Form Builder with reusable, editable templates and per-user access control
 - Invitation-based student registration
 - Student panel for submitting assigned forms
 - PDF generation and email delivery to students
@@ -67,7 +67,7 @@ Never commit `.env`. It is excluded through `.gitignore`.
 
 1. Create free accounts on Vercel, Neon and Brevo, and verify a sender email in Brevo.
 2. In Neon, create a project. Use the pooled URL as `DATABASE_URL` and the direct URL as `DIRECT_URL`.
-3. Run `npx prisma db push` once with these values to create the tables.
+3. Run `npx prisma db push` with these values to create or update the tables (including the reusable-template table added by this feature).
 4. In Brevo, create an API key with the Transactional email permission.
 5. Push the code to GitHub and import the repository in Vercel.
 6. Add all environment variables in Vercel under Settings, then Environment Variables.
@@ -77,7 +77,7 @@ Never commit `.env`. It is excluded through `.gitignore`.
 ## Usage
 
 1. An administrator signs in with an email listed in `ADMIN_EMAILS`.
-2. The administrator creates a form in **Form Builder** and grants access to user emails.
+2. The administrator creates a form in **Form Builder** (optionally saving or using a reusable template) and grants access to user emails.
 3. Invited users register, sign in with OTP and submit the form in **User Panel**.
 4. The administrator reviews responses and sends PDFs from **Generate Documents**.
 

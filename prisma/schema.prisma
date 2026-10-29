@@ -87,6 +87,17 @@ model AppForm {
   @@index([isActive])
 }
 
+model FormTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  fields      Json
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([createdAt])
+}
+
 model FormAccess {
   id        String   @id @default(cuid())
   formId    String

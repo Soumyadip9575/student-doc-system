@@ -11,5 +11,9 @@ export default async function AdminForms() {
     orderBy: { createdAt: "desc" },
     include: { access: { select: { email: true } }, _count: { select: { submissions: true } } },
   });
-  return <main><h1>Form Builder</h1><p>Create forms and control which email addresses can submit them.</p><FormsManager forms={forms.map((form) => ({ ...form, fields: form.fields as FormField[] }))} /></main>;
+  const templates = await db.formTemplate.findMany({ orderBy: { updatedAt: "desc" } });
+  return <main><h1>Form Builder</h1><p>Create forms and control which email addresses can submit them.</p><FormsManager
+    forms={forms.map((form) => ({ ...form, fields: form.fields as FormField[] }))}
+    templates={templates.map((template) => ({ ...template, fields: template.fields as FormField[] }))}
+  /></main>;
 }
